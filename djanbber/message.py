@@ -6,11 +6,19 @@ Created on 02.10.2012
 '''
 
 class MessageType:
-    input = 1
+    input  = 1
     output = 2
-    regme = 3
-    hello = 4
-    unknown = 10
+    regme  = 3
+    hello  = 4
+    unknown= 10
+    
+    @classmethod
+    def is_output(cls, t):
+        return t in [2, 3]
+
+    @classmethod
+    def is_input(cls, t):
+        return t in [1, 4, 10]
 
 OUT_DESTINATION_TYPES = ('message', 'subscribe')
 

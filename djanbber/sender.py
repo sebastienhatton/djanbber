@@ -17,7 +17,7 @@ class JabberSender(object):
         if cls.__this is None:
             cls.__this = super(JabberSender, cls).__new__(cls)
         return cls.__this
-    
+
     @classmethod
     def create(cls, **conf):
         if isinstance(conf, dict) and len(conf)>1 and cls.__conf is None:

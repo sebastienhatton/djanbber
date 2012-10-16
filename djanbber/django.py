@@ -5,48 +5,58 @@ Created on 15.10.2012
 @author: unax
 '''
 from logging import Handler
-from django.views.debug import (
-    get_exception_reporter_filter,
-    ExceptionReporter,
-)
 import traceback
 from sender import JabberSender
-from django.conf import settings
+from datetime import datetime
+
+def data_str_view(obj):
+    res = u""
+    if isinstance(obj, dict):
+        for k in obj:
+            o = data_str_view(obj.get(k))
+            if o:
+                res += u"    %s : %s\n" % (k, o)
+    elif isinstance(obj, (str, unicode)):
+        res += u"%s" % obj
+    elif isinstance(obj, (tuple, list)):
+        res += u"[%s]" % u",".join( filter(lambda x: x is not None,
+                                           [ data_str_view(o) for o in obj  ]) )
+    if len(res)<1: return None
+    else:          return res
 
 class Logger(Handler):
     sender = None
+    __whoami = None
+
     def __init__(self, **kwargs):
-        Handler.__init__(self, **kwargs)
-        self.sender = JabberSender.create(**settings.DJANBBER)
+        Handler.__init__(self)
+        self.__whoami = kwargs.get('from')
+        if not self.__whoami:
+            self.__whoami = 'Djanbber Django Logger'
+        self.sender = JabberSender.create(**kwargs)
+
+    def request_view(self, record):
+        if record.request: 
+            request = record.request
+            attrs = [ atr for atr in dir(request) if not('_' == atr[0]) ]
+            request_repr = u""
+            for atr in attrs:
+                obj = getattr(request, atr, None)
+                if isinstance(obj, (tuple, list, dict, str, unicode)):
+                    request_repr += u"%s : %s\n" % (atr, data_str_view(obj))
+        else:
+            request_repr = 'No request'
+        return request_repr
 
     def emit(self, record):
-        try:
-            request = record.request
-            subject = '%s (%s IP): %s' % (
-                record.levelname,
-                (request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS
-                 and 'internal' or 'EXTERNAL'),
-                record.getMessage()
-            )
-            f = get_exception_reporter_filter(request)
-            request_repr = f.get_request_repr(request)
-        except Exception:
-            subject = '%s: %s' % (
-                record.levelname,
-                record.getMessage()
-            )
-            request = None
-            request_repr = "Request repr() unavailable."
-        subject = self.format_subject(subject)
-
         if record.exc_info:
-            exc_info = record.exc_info
-            stack_trace = '\n'.join(traceback.format_exception(*record.exc_info))
+            stack_trace = u'\n'.join(traceback.format_exception(*record.exc_info))
         else:
-            exc_info = (None, record.getMessage(), None)
-            stack_trace = 'No stack trace available'
-
-        message = "%s\n\n%s" % (stack_trace, request_repr)
-        reporter = ExceptionReporter(request, is_email=True, *exc_info)
-        #html_message = self.include_html and reporter.get_traceback_html() or None
+            stack_trace = u'No stack trace available'
+        message = u"%s\n========== %s %s ==========\n%s\n\n%s" %\
+            (record.getMessage(),
+             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+             self.__whoami,
+             stack_trace,
+             self.request_view(record))
         self.sender.send(message)

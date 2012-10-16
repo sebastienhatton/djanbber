@@ -86,8 +86,8 @@ def message_sender(message, connection):
 def subscribe_sender(message, connection):
     if connection and isinstance(message, MessageTransfer):
         try:
-            connection.connection().send(xmpp.Presence(to=message.who, typ = 'subscribe'))
-            connection.connection().send(xmpp.Presence(to=message.who, typ = 'subscribed'))
+            connection.send(xmpp.Presence(to=message.who, typ = 'subscribe'))
+            connection.send(xmpp.Presence(to=message.who, typ = 'subscribed'))
             return True
         except:
             pass
@@ -183,7 +183,7 @@ class DjanbberBot(object):
             new_message = self.__output_queue.get()
         else:
             self.add_log('Error: outcome queue no exist, check redis configuration.')
-        if isinstance(new_message, MessageTransfer) and new_message.type == MessageType.output:
+        if isinstance(new_message, MessageTransfer) and MessageType.is_output(new_message.type):
             SENDER_METHOD[new_message.destination](new_message, self.__xmpp_connection())
 
     def run(self):

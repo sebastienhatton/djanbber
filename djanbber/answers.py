@@ -41,7 +41,7 @@ class UnknownOperations(AnyOperations):
         return True
     @property
     def answer(self):
-        if DEBUG and self.msg.type not in [ MessageType.output, MessageType.regme ]:
+        if DEBUG and not MessageType.is_output(self.msg.type):
             return [MessageTransfer(who=self.msg.who, body='unknown command', type=MessageType.output), ]
 
 class DeterminateOperations(AnyOperations):
@@ -76,7 +76,7 @@ class AddUserOperations(AnyOperations):
         return [MessageTransfer(who=self.msg.who, body='hi!',
                                 type=MessageType.output,
                                 destination=1 ),
-                MessageTransfer(who=self.msg.who, body='Hi, you on the my mailing list! :)',
+                MessageTransfer(who=self.msg.who, body=self.msg.body,
                                 type=MessageType.output), ]
 
 class HelloOperations(AnyOperations):
@@ -88,4 +88,4 @@ class HelloOperations(AnyOperations):
         return self.msg.type == MessageType.hello
     @property
     def answer(self):
-        return [MessageTransfer(who=self.msg.who, body='Hello, what do you need?', type=MessageType.output), ]
+        return [MessageTransfer(who=self.msg.who, body=self.msg.body, type=MessageType.output), ]
